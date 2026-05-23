@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CATEGORIES, getTool } from "@/lib/catalog";
+import { getToolRow } from "@/lib/tools-db";
+import ToolRunner from "@/components/tool-runner";
 import { Icons } from "@/components/icons";
 
 export function generateStaticParams() {
@@ -54,6 +56,26 @@ export default async function ToolPage({
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
     url: `https://contentcreators.tools/${category.slug}/${tool.slug}`,
   };
+
+  const toolRow = await getToolRow(tool.slug);
+  if (toolRow) {
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <ToolRunner
+          toolSlug={toolRow.slug}
+          toolName={tool.name}
+          toolDesc={tool.desc}
+          inputs={toolRow.input_config}
+          categorySlug={category.slug}
+          categoryName={category.name}
+        />
+      </>
+    );
+  }
 
   if (isLive && tool.url) {
     return (
