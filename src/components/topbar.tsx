@@ -1,18 +1,11 @@
-"use client";
-
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Icons } from "./icons";
+import { createClient } from "@/lib/supabase/server";
+import TopbarSearch from "./topbar-search";
+import UserMenu from "./user-menu";
 
-export default function Topbar() {
-  const router = useRouter();
-  const [q, setQ] = useState("");
-
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (q.trim()) router.push(`/?q=${encodeURIComponent(q.trim())}`);
-  }
+export default async function Topbar() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   return (
     <header className="topbar">
@@ -22,16 +15,12 @@ export default function Topbar() {
         </Link>
       </div>
       <div className="topbar-r">
-        <form className="topbar-search" onSubmit={onSubmit} role="search">
-          {Icons.search}
-          <input
-            type="text"
-            placeholder="Search tools…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            aria-label="Search tools"
-          />
-        </form>
+        <TopbarSearch />
+        {user ? (
+          <UserMenu email={user.email ?? "(no email)"} />
+        ) : (
+          <Link href="/signin" className="btn-ghost topbar-signin">Sign in</Link>
+        )}
       </div>
     </header>
   );
