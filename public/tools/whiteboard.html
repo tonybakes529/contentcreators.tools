@@ -224,6 +224,56 @@
   .pen-opts{position:fixed; left:80px; top:50%; transform:translateY(-50%); z-index:60; display:none; flex-direction:column; gap:10px;
     background:var(--paper); border:1px solid var(--line); border-radius:13px; padding:13px; box-shadow:0 8px 30px rgba(26,26,22,.12)}
   body.pen-open .pen-opts{display:flex}
+
+  /* shape flyout */
+  .shape-flyout{position:fixed; left:80px; bottom:120px; z-index:60; display:none; flex-direction:column; gap:8px;
+    background:var(--paper); border:1px solid var(--line); border-radius:13px; padding:14px; box-shadow:0 8px 30px rgba(26,26,22,.12); width:220px}
+  body.shape-open .shape-flyout{display:flex}
+  .shape-flyout .sf-h{font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); padding:0 2px}
+  .shape-flyout .sf-h-small{margin-top:6px; color:var(--faint); font-size:8px}
+  .shape-flyout .sf-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:6px}
+  .shape-flyout .sf-btn{width:60px; height:48px; border-radius:7px; border:1px solid var(--line); background:var(--cream); color:var(--ink); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:background .14s, border-color .14s}
+  .shape-flyout .sf-btn:hover:not(:disabled){background:#fff; border-color:var(--green)}
+  .shape-flyout .sf-btn svg{width:28px; height:28px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round}
+  .shape-flyout .sf-btn.is-soon{opacity:.45; cursor:not-allowed}
+
+  /* shape nodes */
+  .node.shape{display:flex; align-items:center; justify-content:center}
+  .node.shape .shape-svg{width:100%; height:100%; overflow:visible; display:block; pointer-events:none}
+  .node.shape .shape-svg path,
+  .node.shape .shape-svg rect,
+  .node.shape .shape-svg circle,
+  .node.shape .shape-svg ellipse{fill:#fff; stroke:var(--ink); stroke-width:2; vector-effect:non-scaling-stroke; pointer-events:auto}
+  .node.shape.tone-green .shape-svg path,
+  .node.shape.tone-green .shape-svg rect,
+  .node.shape.tone-green .shape-svg circle,
+  .node.shape.tone-green .shape-svg ellipse{stroke:var(--green); fill:var(--green-tint)}
+  .node.shape.tone-orange .shape-svg path,
+  .node.shape.tone-orange .shape-svg rect,
+  .node.shape.tone-orange .shape-svg circle,
+  .node.shape.tone-orange .shape-svg ellipse{stroke:var(--orange); fill:var(--orange-tint)}
+  .node.shape .shape-label{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:14px;
+    font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; color:var(--ink); text-align:center; outline:none; line-height:1.25; pointer-events:auto}
+  .node.shape .shape-label:empty::before{content:'Type…'; color:var(--faint); font-weight:400}
+
+  /* floating text format toolbar */
+  .fmt-bar{position:fixed; z-index:140; display:none; align-items:center; gap:6px; padding:6px 8px;
+    background:var(--paper); border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 30px rgba(26,26,22,.16);
+    font-family:'DM Sans',sans-serif; transform:translate(-50%, -100%); margin-top:-8px}
+  .fmt-bar.show{display:flex}
+  .fmt-bar .fmt-btn{height:28px; min-width:28px; padding:0 8px; border-radius:6px; border:1px solid transparent; background:transparent; color:var(--ink);
+    cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px; transition:background .12s, border-color .12s}
+  .fmt-bar .fmt-btn:hover{background:var(--cream); border-color:var(--line)}
+  .fmt-bar .fmt-btn.is-on{background:var(--green-pill); border-color:var(--green)}
+  .fmt-bar .fmt-sel{height:28px; padding:0 6px; border-radius:6px; border:1px solid var(--line); background:#fff; font-size:12px; color:var(--ink); cursor:pointer; outline:none}
+  .fmt-bar .fmt-sep{width:1px; height:18px; background:var(--line); margin:0 2px}
+  .fmt-bar .fmt-color{position:relative; width:28px; height:28px; border-radius:6px; border:1px solid var(--line); cursor:pointer; overflow:hidden}
+  .fmt-bar .fmt-color::after{content:''; position:absolute; inset:5px; border-radius:3px; background:currentColor}
+  .fmt-bar input[type=color]{position:absolute; inset:0; opacity:0; cursor:pointer; border:0; padding:0}
+  .fmt-bar .fmt-b{font-weight:700}
+  .fmt-bar .fmt-i{font-style:italic}
+  .fmt-bar .fmt-u{text-decoration:underline}
   .grp-lab{font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
   .swatches{display:flex; gap:7px} .sw{width:24px; height:24px; border-radius:50%; cursor:pointer; border:2px solid transparent; box-shadow:0 0 0 1px var(--line)}
   .sw.on{border-color:#fff; box-shadow:0 0 0 2px var(--ink)}
@@ -457,6 +507,24 @@
   <div class="tsep"></div>
   <button class="tbtn" data-act="note" title="Add sticky note (N)"><svg viewBox="0 0 24 24"><path d="M5 4h14v10l-5 5H5z"/><path d="M19 14h-5v5"/></svg><span class="lab">Note</span></button>
   <button class="tbtn" data-act="image" title="Add image (I)"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M5 17l4-4 3 3 3-4 4 5"/></svg><span class="lab">Image</span></button>
+  <button class="tbtn" id="shapeBtn" title="Add shape (S)"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="4"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg><span class="lab">Shape</span></button>
+</div>
+
+<div class="shape-flyout" id="shapeFlyout">
+  <div class="sf-h">Shape</div>
+  <div class="sf-grid">
+    <button class="sf-btn" data-shape="rect" title="Rectangle"><svg viewBox="0 0 32 32"><rect x="4" y="7" width="24" height="18" rx="2"/></svg></button>
+    <button class="sf-btn" data-shape="circle" title="Circle"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11"/></svg></button>
+    <button class="sf-btn" data-shape="ellipse" title="Ellipse"><svg viewBox="0 0 32 32"><ellipse cx="16" cy="16" rx="13" ry="8"/></svg></button>
+    <button class="sf-btn" data-shape="triangle" title="Triangle"><svg viewBox="0 0 32 32"><path d="M16 4 L29 27 L3 27 Z"/></svg></button>
+    <button class="sf-btn" data-shape="diamond" title="Diamond"><svg viewBox="0 0 32 32"><path d="M16 3 L29 16 L16 29 L3 16 Z"/></svg></button>
+    <button class="sf-btn" data-shape="pill" title="Pill"><svg viewBox="0 0 32 32"><rect x="3" y="10" width="26" height="12" rx="6"/></svg></button>
+  </div>
+  <div class="sf-h sf-h-small">Connector (coming in next pass)</div>
+  <div class="sf-grid">
+    <button class="sf-btn is-soon" disabled title="Arrow — next pass"><svg viewBox="0 0 32 32"><path d="M5 16 L25 16 M19 10 L25 16 L19 22"/></svg></button>
+    <button class="sf-btn is-soon" disabled title="Line — next pass"><svg viewBox="0 0 32 32"><path d="M5 26 L27 6"/></svg></button>
+  </div>
 </div>
 
 <div class="pen-opts" id="penOpts">
@@ -567,6 +635,35 @@ Messy is fine — AI figures out the sections, titles and bullet points for you.
 </div>
 
 <div class="dropbar" id="dropBar"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#8FD9B6;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5v14M5 12h14"/></svg> Drop <b id="dropName"></b> anywhere on the board · release to place · Esc to cancel</div>
+
+<div class="fmt-bar" id="fmtBar">
+  <select class="fmt-sel" id="fmtFont" title="Font">
+    <option value="'DM Sans',sans-serif">DM Sans</option>
+    <option value="'Inter',sans-serif">Inter</option>
+    <option value="'Anton',sans-serif">Anton</option>
+    <option value="'Space Mono',monospace">Space Mono</option>
+    <option value="Georgia,serif">Georgia</option>
+    <option value="'Courier New',monospace">Courier</option>
+  </select>
+  <select class="fmt-sel" id="fmtSize" title="Font size">
+    <option>10</option><option>12</option><option>14</option><option selected>16</option><option>18</option><option>20</option><option>24</option><option>28</option><option>32</option><option>40</option>
+  </select>
+  <div class="fmt-sep"></div>
+  <button class="fmt-btn fmt-b" data-fcmd="bold" title="Bold (⌘B)">B</button>
+  <button class="fmt-btn fmt-i" data-fcmd="italic" title="Italic (⌘I)">I</button>
+  <button class="fmt-btn fmt-u" data-fcmd="underline" title="Underline (⌘U)">U</button>
+  <div class="fmt-sep"></div>
+  <button class="fmt-btn" data-falign="left" title="Align left"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 4h12M2 8h8M2 12h12"/></svg></button>
+  <button class="fmt-btn" data-falign="center" title="Align center"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 4h12M4 8h8M2 12h12"/></svg></button>
+  <button class="fmt-btn" data-falign="right" title="Align right"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 4h12M6 8h8M2 12h12"/></svg></button>
+  <div class="fmt-sep"></div>
+  <label class="fmt-color" id="fmtColorWrap" title="Text color" style="color:#1A1A16">
+    <input type="color" id="fmtColor" value="#1A1A16">
+  </label>
+  <button class="fmt-btn" data-fcmd="removeFormat" title="Clear formatting">
+    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M3 13l10-10M3 3l10 10"/></svg>
+  </button>
+</div>
 
 <div class="auth-banner" id="authBanner">
   <div style="flex:1">
@@ -745,6 +842,15 @@ function makeNode(n){
   if(n.type==='frame'){el.className='node frame';el.innerHTML=`<div class="flabel"><span class="fn">${n.n}</span> ${n.name}</div><button class="fadd" title="Add a box to this section"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add box</button>`;}
   else if(n.type==='box'){el.className='node box k-'+n.kind;el.innerHTML=n.html;}
   else if(n.type==='image'){el.className='node image';const img=document.createElement('img');img.src=n.src;img.draggable=false;el.appendChild(img);}
+  else if(n.type==='shape'){
+    el.className='node shape s-'+(n.shape||'rect')+(n.tone?' tone-'+n.tone:'');
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.classList.add('shape-svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');
+    svg.innerHTML=shapeSVG(n.shape||'rect');
+    el.appendChild(svg);
+    const lab=document.createElement('div');lab.className='shape-label';lab.textContent=n.ttl||'';
+    el.appendChild(lab);
+  }
   else{el.className='node note';const k=document.createElement('div');k.className='kick';k.textContent='Note';el.appendChild(k);const t=document.createElement('div');t.className='ttl';t.textContent=n.ttl||'';el.appendChild(t);}
   const handle=document.createElement('div'); handle.className='handle'; el.appendChild(handle);
   const del=document.createElement('button'); del.className='del'; del.textContent='×'; el.appendChild(del);
@@ -818,13 +924,19 @@ function wireNode(el,n){
       if(n.type!=='image'){const h=Math.max(40,sh+(e.clientY-sy)/view.scale);n.h=h;el.style.height=h+'px';}redrawGroups();updateSelBar();};
     const up=()=>{handle.releasePointerCapture(ev.pointerId);handle.removeEventListener('pointermove',mv);handle.removeEventListener('pointerup',up);save();};
     handle.addEventListener('pointermove',mv);handle.addEventListener('pointerup',up);});
-  // edit text (note + content box)
-  if(n.type==='note'||n.type==='box'){
+  // edit text (note + content box + shape)
+  if(n.type==='note'||n.type==='box'||n.type==='shape'){
     el.addEventListener('dblclick',ev=>{ev.stopPropagation();
-      const tgt = n.type==='note'? el.querySelector('.ttl') : el.firstElementChild;
+      let tgt;
+      if(n.type==='note') tgt = el.querySelector('.ttl');
+      else if(n.type==='shape') tgt = el.querySelector('.shape-label');
+      else tgt = el.firstElementChild;
       if(!tgt)return; tgt.setAttribute('contenteditable','true'); tgt.focus();
       const r=document.createRange();r.selectNodeContents(tgt);const s=getSelection();s.removeAllRanges();s.addRange(r);
-      const done=()=>{tgt.removeAttribute('contenteditable'); if(n.type==='note')n.ttl=tgt.textContent; else n.html=tgt.outerHTML; tgt.removeEventListener('blur',done); save();};
+      const done=()=>{tgt.removeAttribute('contenteditable');
+        if(n.type==='note'||n.type==='shape') n.ttl=tgt.textContent;
+        else n.html=tgt.outerHTML;
+        tgt.removeEventListener('blur',done); save();};
       tgt.addEventListener('blur',done);
       tgt.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&n.type==='note'){e.preventDefault();tgt.blur();}});});
   }
@@ -860,6 +972,35 @@ function addNote(x,y){const p=(x==null)?centerWorld():{x,y};
   setTimeout(()=>{const t=el.querySelector('.ttl');t.setAttribute('contenteditable','true');t.focus();
     const r=document.createRange();r.selectNodeContents(t);const s=getSelection();s.removeAllRanges();s.addRange(r);
     t.addEventListener('blur',()=>{t.removeAttribute('contenteditable');n.ttl=t.textContent;save();},{once:true});},30);}
+
+function shapeSVG(kind){
+  switch(kind){
+    case 'circle': return '<circle cx="50" cy="50" r="48"/>';
+    case 'ellipse': return '<ellipse cx="50" cy="50" rx="48" ry="32"/>';
+    case 'triangle': return '<path d="M50 4 L96 92 L4 92 Z"/>';
+    case 'diamond': return '<path d="M50 4 L96 50 L50 96 L4 50 Z"/>';
+    case 'pill': return '<rect x="2" y="20" width="96" height="60" rx="30"/>';
+    case 'rect':
+    default: return '<rect x="2" y="2" width="96" height="96" rx="6"/>';
+  }
+}
+function shapeDefaultSize(kind){
+  if(kind==='ellipse'||kind==='pill') return {w:260,h:140};
+  if(kind==='triangle'||kind==='diamond') return {w:200,h:180};
+  return {w:200,h:160};
+}
+function addShape(kind,x,y){
+  const p=(x==null)?centerWorld():{x,y};
+  const sz=shapeDefaultSize(kind);
+  const n={id:'n'+(++state.nextId),type:'shape',shape:kind,ttl:'',x:p.x-sz.w/2,y:p.y-sz.h/2,w:sz.w,h:sz.h};
+  state.nodes.push(n);const el=makeNode(n);reframe(n);setSel([n.id]);save();
+  // Auto-enter label edit so the user can name it immediately
+  setTimeout(()=>{const t=el.querySelector('.shape-label');if(!t)return;
+    t.setAttribute('contenteditable','true');t.focus();
+    const r=document.createRange();r.selectNodeContents(t);const s=getSelection();s.removeAllRanges();s.addRange(r);
+    t.addEventListener('blur',()=>{t.removeAttribute('contenteditable');n.ttl=t.textContent;save();},{once:true});
+  },30);
+}
 function addImage(src,x,y,w,storage_path){const p=(x==null)?centerWorld():{x,y};
   const n={id:'n'+(++state.nextId),type:'image',src,x:p.x-(w||160)/2,y:p.y-90,w:w||240};
   if(storage_path)n.storage_path=storage_path;
@@ -977,6 +1118,107 @@ const fileInput=document.getElementById('fileInput');
 document.querySelector('.tbtn[data-act="image"]').addEventListener('click',()=>fileInput.click());
 document.getElementById('addImgBtn').addEventListener('click',()=>fileInput.click());
 fileInput.addEventListener('change',e=>{[...e.target.files].forEach(f=>fileToImage(f));e.target.value='';});
+
+/* ===== shape palette (sidebar flyout) ===== */
+const shapeBtn=document.getElementById('shapeBtn');
+const shapeFlyout=document.getElementById('shapeFlyout');
+function toggleShapeFlyout(force){
+  const on = (force===undefined) ? !document.body.classList.contains('shape-open') : !!force;
+  document.body.classList.toggle('shape-open',on);
+  shapeBtn.classList.toggle('on',on);
+}
+shapeBtn.addEventListener('click',e=>{e.stopPropagation();toggleShapeFlyout();});
+shapeFlyout.addEventListener('click',e=>{
+  const b=e.target.closest('.sf-btn[data-shape]');if(!b||b.disabled)return;
+  setMode('select');addShape(b.dataset.shape);toggleShapeFlyout(false);
+});
+// Close flyout when clicking elsewhere
+document.addEventListener('pointerdown',e=>{
+  if(!document.body.classList.contains('shape-open'))return;
+  if(e.target.closest('#shapeFlyout')||e.target.closest('#shapeBtn'))return;
+  toggleShapeFlyout(false);
+});
+
+/* ===== floating text format bar =====
+ * Appears above any contenteditable that gains focus (.ttl / .shape-label).
+ * Applies formatting with execCommand (still ubiquitously supported despite
+ * its deprecation flag — modern Range-API alternatives have worse selection
+ * persistence on blur/refocus). Saves the host node's value when the editor
+ * blurs so persistence stays in sync.
+ */
+const fmtBar=document.getElementById('fmtBar');
+let fmtTarget=null;          // current editable element being formatted
+let fmtBarHideT=null;
+function positionFmtBar(){
+  if(!fmtTarget)return;
+  const r=fmtTarget.getBoundingClientRect();
+  if(!r.width&&!r.height){fmtBar.classList.remove('show');return;}
+  fmtBar.style.left=(r.left+r.width/2)+'px';
+  fmtBar.style.top=r.top+'px';
+}
+function showFmtBar(target){
+  clearTimeout(fmtBarHideT);
+  fmtTarget=target;fmtBar.classList.add('show');positionFmtBar();syncFmtBarState();
+}
+function hideFmtBar(){
+  // Defer so clicking a button doesn't close the bar before its handler runs
+  fmtBarHideT=setTimeout(()=>{
+    if(fmtBar.matches(':hover'))return;
+    fmtBar.classList.remove('show');fmtTarget=null;
+  },120);
+}
+function syncFmtBarState(){
+  try{
+    fmtBar.querySelectorAll('.fmt-btn[data-fcmd]').forEach(b=>{
+      const cmd=b.dataset.fcmd;
+      if(cmd==='bold'||cmd==='italic'||cmd==='underline'){
+        b.classList.toggle('is-on',document.queryCommandState(cmd));
+      }
+    });
+  }catch(e){}
+}
+// Listen at the document level so we catch any contenteditable element
+document.addEventListener('focusin',e=>{
+  const t=e.target;if(!t||!(t.getAttribute&&t.getAttribute('contenteditable')==='true'))return;
+  if(!t.matches('.ttl, .shape-label, [data-fmt]'))return;
+  showFmtBar(t);
+});
+document.addEventListener('focusout',e=>{
+  if(!fmtTarget||e.target!==fmtTarget)return;hideFmtBar();
+});
+document.addEventListener('selectionchange',()=>{if(fmtTarget)syncFmtBarState();});
+window.addEventListener('scroll',positionFmtBar,true);
+window.addEventListener('resize',positionFmtBar);
+
+fmtBar.addEventListener('mousedown',e=>{
+  // Prevent stealing focus from the editor before our command runs
+  if(e.target.closest('select')||e.target.tagName==='OPTION')return;
+  e.preventDefault();
+});
+fmtBar.addEventListener('click',e=>{
+  if(!fmtTarget)return;fmtTarget.focus();
+  const cmdBtn=e.target.closest('[data-fcmd]');
+  if(cmdBtn){document.execCommand(cmdBtn.dataset.fcmd);syncFmtBarState();return;}
+  const alignBtn=e.target.closest('[data-falign]');
+  if(alignBtn){const a=alignBtn.dataset.falign;document.execCommand('justify'+a[0].toUpperCase()+a.slice(1));return;}
+});
+document.getElementById('fmtFont').addEventListener('change',e=>{
+  if(!fmtTarget)return;fmtTarget.focus();document.execCommand('fontName',false,e.target.value);
+});
+document.getElementById('fmtSize').addEventListener('change',e=>{
+  if(!fmtTarget)return;fmtTarget.focus();
+  // execCommand('fontSize') only takes 1-7; emulate with inline span
+  const px=e.target.value+'px';
+  document.execCommand('fontSize',false,'7');
+  fmtTarget.querySelectorAll('font[size="7"]').forEach(f=>{
+    const s=document.createElement('span');s.style.fontSize=px;s.innerHTML=f.innerHTML;f.replaceWith(s);
+  });
+});
+document.getElementById('fmtColor').addEventListener('input',e=>{
+  if(!fmtTarget)return;fmtTarget.focus();
+  document.execCommand('foreColor',false,e.target.value);
+  document.getElementById('fmtColorWrap').style.color=e.target.value;
+});
 
 const palette=[ORANGE,GREEN,'#1A1A16','#C8102E','#2A5BBF','#E0A100'];
 document.getElementById('swatches').innerHTML=palette.map(c=>`<div class="sw" data-c="${c}" style="background:${c}"></div>`).join('');
