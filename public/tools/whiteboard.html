@@ -35,9 +35,50 @@
   .node{position:absolute; cursor:grab; -webkit-user-select:none; user-select:none}
   .node.dragging{cursor:grabbing; z-index:9999 !important}
   .node.sel{outline:2px solid var(--green); outline-offset:3px; border-radius:13px}
-  .node .handle{position:absolute; right:-8px; bottom:-8px; width:17px; height:17px; border-radius:5px;
-    background:var(--green); border:2px solid #fff; cursor:nwse-resize; display:none; z-index:6; box-shadow:0 1px 3px rgba(0,0,0,.25)}
-  .node:hover .handle,.node.sel .handle{display:block}
+  /* legacy single corner handle — kept hidden for backward compat */
+  .node .handle{display:none}
+  /* 8-direction resize handles */
+  .node .rh{position:absolute; width:11px; height:11px; border-radius:3px;
+    background:#fff; border:1.5px solid var(--green); z-index:6; box-sizing:border-box; opacity:0; transition:opacity .12s; pointer-events:auto}
+  .node:hover .rh,.node.sel .rh{opacity:1}
+  .node.frame .rh{border-color:var(--accent,var(--green))}
+  .node .rh.h-nw{top:-6px; left:-6px; cursor:nwse-resize}
+  .node .rh.h-n{top:-6px; left:50%; margin-left:-6px; cursor:ns-resize}
+  .node .rh.h-ne{top:-6px; right:-6px; cursor:nesw-resize}
+  .node .rh.h-e{top:50%; margin-top:-6px; right:-6px; cursor:ew-resize}
+  .node .rh.h-se{bottom:-6px; right:-6px; cursor:nwse-resize}
+  .node .rh.h-s{bottom:-6px; left:50%; margin-left:-6px; cursor:ns-resize}
+  .node .rh.h-sw{bottom:-6px; left:-6px; cursor:nesw-resize}
+  .node .rh.h-w{top:50%; margin-top:-6px; left:-6px; cursor:ew-resize}
+  /* 4-side connection anchors (visible on hover) */
+  .node .anc{position:absolute; width:14px; height:14px; border-radius:50%;
+    background:var(--green); border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.25);
+    z-index:7; opacity:0; transition:opacity .15s, transform .12s; cursor:crosshair; pointer-events:auto}
+  .node:hover .anc{opacity:.9}
+  .node .anc:hover{opacity:1; transform:scale(1.25)}
+  .node .anc.a-n{top:-22px; left:50%; margin-left:-7px}
+  .node .anc.a-e{right:-22px; top:50%; margin-top:-7px}
+  .node .anc.a-s{bottom:-22px; left:50%; margin-left:-7px}
+  .node .anc.a-w{left:-22px; top:50%; margin-top:-7px}
+  /* hide anchors while drawing/erasing or actively dragging */
+  #stage.mode-draw .node .anc,#stage.mode-erase .node .anc,
+  #stage.mode-draw .node .rh,#stage.mode-erase .node .rh,
+  .node.dragging .anc,.node.dragging .rh{opacity:0 !important; pointer-events:none}
+  /* connector layer */
+  #connectors{position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:visible; z-index:1}
+  #connectors path{pointer-events:stroke; cursor:pointer; transition:stroke-width .12s}
+  #connectors path:hover{stroke-width:4}
+  #connectors path.sel{stroke:var(--green) !important}
+  /* connector ghost while dragging */
+  #connGhost{position:fixed; inset:0; pointer-events:none; z-index:29; display:none; overflow:visible}
+  body.connecting #connGhost{display:block}
+  body.connecting{cursor:crosshair}
+  body.connecting .node{cursor:crosshair}
+  /* highlight the node currently under the connector cursor */
+  .node.conn-hover{outline:3px dashed var(--green); outline-offset:6px; border-radius:14px}
+  /* tip badge over the shape button while the connector help is fresh */
+  .tbtn.flash{animation:pulse 1.2s ease 2}
+  @keyframes pulse{0%,100%{transform:scale(1)} 50%{transform:scale(1.1); background:var(--green-pill)}}
   .node .del{position:absolute; top:-10px; right:-10px; width:22px; height:22px; border-radius:50%; background:var(--ink);
     color:#fff; border:2px solid var(--cream); font-size:13px; line-height:1; cursor:pointer; display:none; align-items:center; justify-content:center; padding:0; z-index:6}
   .node:hover .del,.node.sel .del{display:flex}
@@ -237,6 +278,7 @@
   .shape-flyout .sf-btn:hover:not(:disabled){background:#fff; border-color:var(--green)}
   .shape-flyout .sf-btn svg{width:28px; height:28px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round}
   .shape-flyout .sf-btn.is-soon{opacity:.45; cursor:not-allowed}
+  .shape-flyout .sf-tip{font-size:10px; color:var(--muted); padding:2px 2px; line-height:1.45; letter-spacing:.02em; text-transform:none}
 
   /* shape nodes */
   .node.shape{display:flex; align-items:center; justify-content:center}
@@ -480,6 +522,7 @@
   <div id="world">
     <div id="frames"></div>
     <div id="groups"></div>
+    <svg id="connectors"></svg>
     <div id="nodes"></div>
     <svg id="draw"></svg>
   </div>
@@ -520,11 +563,8 @@
     <button class="sf-btn" data-shape="diamond" title="Diamond"><svg viewBox="0 0 32 32"><path d="M16 3 L29 16 L16 29 L3 16 Z"/></svg></button>
     <button class="sf-btn" data-shape="pill" title="Pill"><svg viewBox="0 0 32 32"><rect x="3" y="10" width="26" height="12" rx="6"/></svg></button>
   </div>
-  <div class="sf-h sf-h-small">Connector (coming in next pass)</div>
-  <div class="sf-grid">
-    <button class="sf-btn is-soon" disabled title="Arrow — next pass"><svg viewBox="0 0 32 32"><path d="M5 16 L25 16 M19 10 L25 16 L19 22"/></svg></button>
-    <button class="sf-btn is-soon" disabled title="Line — next pass"><svg viewBox="0 0 32 32"><path d="M5 26 L27 6"/></svg></button>
-  </div>
+  <div class="sf-h sf-h-small">Connector</div>
+  <div class="sf-tip mono">Hover any shape and drag from one of the 4 side dots → drop on another shape.</div>
 </div>
 
 <div class="pen-opts" id="penOpts">
@@ -633,6 +673,8 @@ Messy is fine — AI figures out the sections, titles and bullet points for you.
     <div class="fv-scroll"><div class="pvframe" id="fvBody"></div></div>
   </div>
 </div>
+
+<svg id="connGhost"></svg>
 
 <div class="dropbar" id="dropBar"><svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:#8FD9B6;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M12 5v14M5 12h14"/></svg> Drop <b id="dropName"></b> anywhere on the board · release to place · Esc to cancel</div>
 
@@ -833,6 +875,7 @@ function buildBoard(){
 
 /* ===== node DOM ===== */
 function makeNode(n){
+  if(n.type==='connector'){return makeConnector(n);}
   const el=document.createElement('div');
   el.dataset.id=n.id;
   el.style.left=n.x+'px'; el.style.top=n.y+'px';
@@ -852,6 +895,16 @@ function makeNode(n){
     el.appendChild(lab);
   }
   else{el.className='node note';const k=document.createElement('div');k.className='kick';k.textContent='Note';el.appendChild(k);const t=document.createElement('div');t.className='ttl';t.textContent=n.ttl||'';el.appendChild(t);}
+  // 8-direction resize handles
+  ['nw','n','ne','e','se','s','sw','w'].forEach(dir=>{
+    const h=document.createElement('div');h.className='rh h-'+dir;h.dataset.dir=dir;el.appendChild(h);
+  });
+  // 4-side connection anchors (skip on image — anchors would obstruct corner handles on small thumbnails)
+  if(n.type!=='image'){
+    ['n','e','s','w'].forEach(side=>{
+      const a=document.createElement('div');a.className='anc a-'+side;a.dataset.side=side;el.appendChild(a);
+    });
+  }
   const handle=document.createElement('div'); handle.className='handle'; el.appendChild(handle);
   const del=document.createElement('button'); del.className='del'; del.textContent='×'; el.appendChild(del);
   (n.type==='frame'?framesLayer:nodesLayer).appendChild(el);
@@ -859,6 +912,154 @@ function makeNode(n){
   el.style.zIndex = n.type==='frame' ? 1 : ++zc;
   wireNode(el,n);
   return el;
+}
+
+/* ===== connector node ===== */
+const connectorsLayer=document.getElementById('connectors');
+function ensureConnDefs(){
+  if(connectorsLayer.querySelector('defs'))return;
+  const defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+  defs.innerHTML='<marker id="connArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>';
+  connectorsLayer.appendChild(defs);
+}
+function nodeBoundsForConn(id){
+  const nn=getNode(id);if(!nn)return null;
+  const el=els.get(id);if(!el)return null;
+  const w=nn.w||el.offsetWidth, h=nn.h||el.offsetHeight;
+  return {x:nn.x,y:nn.y,w,h};
+}
+function anchorPoint(b,side){
+  if(!b)return null;
+  switch(side){
+    case 'n': return {x:b.x+b.w/2, y:b.y};
+    case 'e': return {x:b.x+b.w,   y:b.y+b.h/2};
+    case 's': return {x:b.x+b.w/2, y:b.y+b.h};
+    case 'w': return {x:b.x,       y:b.y+b.h/2};
+  }
+  return {x:b.x,y:b.y};
+}
+function connectorPathD(p1,s1,p2,s2){
+  // Curved path with control points projected outward from each endpoint
+  const dx=Math.max(60, Math.abs(p2.x-p1.x)*0.5);
+  const dy=Math.max(60, Math.abs(p2.y-p1.y)*0.5);
+  const out=(side,d)=>{
+    if(side==='n')return [0,-d]; if(side==='s')return [0,d];
+    if(side==='e')return [d,0];  if(side==='w')return [-d,0];
+    return [0,0];
+  };
+  const horiz=(s)=>s==='e'||s==='w';
+  const cd=horiz(s1)?dx:dy;
+  const o1=out(s1,cd), o2=out(s2,horiz(s2)?dx:dy);
+  return `M ${p1.x} ${p1.y} C ${p1.x+o1[0]} ${p1.y+o1[1]}, ${p2.x+o2[0]} ${p2.y+o2[1]}, ${p2.x} ${p2.y}`;
+}
+function makeConnector(n){
+  ensureConnDefs();
+  const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.dataset.id=n.id;
+  p.setAttribute('fill','none');
+  p.setAttribute('stroke',n.color||'#1A1A16');
+  p.setAttribute('stroke-width',n.width||2);
+  p.setAttribute('stroke-linecap','round');
+  p.setAttribute('marker-end','url(#connArrow)');
+  p.style.color=n.color||'#1A1A16';
+  connectorsLayer.appendChild(p);
+  els.set(n.id,p);
+  updateConnectorPath(n,p);
+  // Selection / delete on click
+  p.addEventListener('pointerdown',ev=>{
+    ev.stopPropagation();
+    setSel([n.id]);
+    connectorsLayer.querySelectorAll('path').forEach(q=>q.classList.toggle('sel',q.dataset.id===n.id));
+  });
+  return p;
+}
+function updateConnectorPath(n,el){
+  el=el||els.get(n.id);if(!el)return;
+  const b1=nodeBoundsForConn(n.from.nodeId), b2=nodeBoundsForConn(n.to.nodeId);
+  if(!b1||!b2){el.setAttribute('d','');return;}
+  const p1=anchorPoint(b1,n.from.side), p2=anchorPoint(b2,n.to.side);
+  el.setAttribute('d',connectorPathD(p1,n.from.side,p2,n.to.side));
+}
+function updateConnectorsForNode(nodeId){
+  state.nodes.forEach(c=>{
+    if(c.type!=='connector')return;
+    if(c.from&&c.from.nodeId===nodeId)updateConnectorPath(c);
+    else if(c.to&&c.to.nodeId===nodeId)updateConnectorPath(c);
+  });
+}
+function updateAllConnectors(){
+  state.nodes.forEach(c=>{if(c.type==='connector')updateConnectorPath(c);});
+}
+
+/* ===== drag-to-connect interaction =====
+ * On anchor pointerdown, follow the cursor in screen space with a ghost path.
+ * On pointerup, if the cursor is over another node's anchor (or simply over
+ * another node), snap and create a real connector. Otherwise cancel.
+ */
+const connGhost=document.getElementById('connGhost');
+function worldToScreen(wx,wy){const r=stage.getBoundingClientRect();return {x:r.left+view.x+wx*view.scale, y:r.top+view.y+wy*view.scale};}
+function startConnectorDrag(srcNode,srcSide,ev){
+  document.body.classList.add('connecting');
+  // Anchor start point in screen space
+  const b=nodeBoundsForConn(srcNode.id);
+  const a=anchorPoint(b,srcSide);
+  const s0=worldToScreen(a.x,a.y);
+  let cur={x:ev.clientX,y:ev.clientY};
+  // Render ghost
+  connGhost.innerHTML='<path id="cg" fill="none" stroke="#1A1A16" stroke-width="2" stroke-dasharray="6 4" stroke-linecap="round" marker-end="url(#cgArrow)"></path><defs><marker id="cgArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1A1A16"/></marker></defs>';
+  const ghostPath=connGhost.querySelector('#cg');
+  function paintGhost(){
+    // Curve from s0 to cur using a control offset toward the source side
+    const horiz=srcSide==='e'||srcSide==='w';
+    const dist=Math.max(80,Math.hypot(cur.x-s0.x,cur.y-s0.y)*0.5);
+    const off=horiz?[srcSide==='e'?dist:-dist,0]:[0,srcSide==='s'?dist:-dist];
+    ghostPath.setAttribute('d',`M ${s0.x} ${s0.y} C ${s0.x+off[0]} ${s0.y+off[1]}, ${cur.x} ${cur.y}, ${cur.x} ${cur.y}`);
+  }
+  paintGhost();
+  let dropTarget=null;
+  function hoverFeedback(el){
+    nodesLayer.querySelectorAll('.node.conn-hover, .node.frame.conn-hover').forEach(n=>n.classList.remove('conn-hover'));
+    framesLayer.querySelectorAll('.node.conn-hover').forEach(n=>n.classList.remove('conn-hover'));
+    if(el)el.classList.add('conn-hover');
+  }
+  const mv=e=>{
+    cur={x:e.clientX,y:e.clientY};
+    // Hit-test: find node under cursor (ignore the source itself + anchors/handles)
+    const hits=document.elementsFromPoint(e.clientX,e.clientY);
+    let nodeEl=null;
+    for(const h of hits){
+      if(h.classList&&h.classList.contains('anc'))continue;
+      const ne=h.closest&&h.closest('.node');
+      if(!ne)continue;
+      if(ne.dataset.id===srcNode.id)continue;
+      nodeEl=ne;break;
+    }
+    dropTarget=nodeEl?nodeEl.dataset.id:null;
+    hoverFeedback(nodeEl);
+    paintGhost();
+  };
+  const up=e=>{
+    window.removeEventListener('pointermove',mv);
+    window.removeEventListener('pointerup',up);
+    document.body.classList.remove('connecting');
+    connGhost.innerHTML='';
+    hoverFeedback(null);
+    if(!dropTarget||dropTarget===srcNode.id)return;
+    // Decide target side by which edge of the target the cursor is closest to
+    const tb=nodeBoundsForConn(dropTarget);if(!tb)return;
+    const t0=worldToScreen(tb.x,tb.y), t1=worldToScreen(tb.x+tb.w,tb.y+tb.h);
+    const cx=(t0.x+t1.x)/2, cy=(t0.y+t1.y)/2;
+    const dxR=Math.abs(e.clientX-cx)/Math.max(1,(t1.x-t0.x)/2);
+    const dyR=Math.abs(e.clientY-cy)/Math.max(1,(t1.y-t0.y)/2);
+    let toSide;
+    if(dxR>dyR) toSide = e.clientX<cx ? 'w' : 'e';
+    else        toSide = e.clientY<cy ? 'n' : 's';
+    const c={id:'c'+(++state.nextId),type:'connector',from:{nodeId:srcNode.id,side:srcSide},to:{nodeId:dropTarget,side:toSide},color:'#1A1A16',width:2};
+    state.nodes.push(c);makeNode(c);save();
+    setHint('Connector created. Drag either shape — the arrow follows.');
+  };
+  window.addEventListener('pointermove',mv);
+  window.addEventListener('pointerup',up,{once:false});
 }
 const groupsLayer=document.getElementById('groups');
 let selSet=new Set(), clipboard=null;
@@ -895,35 +1096,67 @@ function updateSelBar(){const bar=document.getElementById('selbar');if(!selSet.s
   document.getElementById('sbGroup').style.display=selSet.size>=2?'inline-flex':'none';
   document.getElementById('sbUngroup').style.display=grouped?'inline-flex':'none';}
 function wireNode(el,n){
-  const handle=el.querySelector('.handle');
   el.querySelector('.del').addEventListener('pointerdown',e=>e.stopPropagation());
   el.querySelector('.del').addEventListener('click',e=>{e.stopPropagation();
     if(n.type==='frame'){membersOf(n).forEach(m=>removeNodeRaw(m.id));removeNodeRaw(n.id);redrawGroups();markSel();save();}
     else removeNode(n.id);});
   const fadd=el.querySelector('.fadd');
   if(fadd){fadd.addEventListener('pointerdown',e=>e.stopPropagation());fadd.addEventListener('click',e=>{e.stopPropagation();addBoxToFrame(n);});}
-  // resize — single box, or the whole highlighted selection together
-  handle.addEventListener('pointerdown',ev=>{ev.stopPropagation();ev.preventDefault();
-    handle.setPointerCapture(ev.pointerId);const sx=ev.clientX,sy=ev.clientY;
-    if(!selSet.has(n.id)) setSel(withGroup(n.id));
-    if(selSet.size>1){
-      const items=[...selSet].map(id=>({n:getNode(id),el:els.get(id)})).filter(m=>m.n&&m.el);
-      let l=1e9,t=1e9,r=-1e9,b=-1e9;
-      items.forEach(m=>{l=Math.min(l,m.n.x);t=Math.min(t,m.n.y);r=Math.max(r,m.n.x+m.el.offsetWidth);b=Math.max(b,m.n.y+m.el.offsetHeight);});
-      const bw=Math.max(1,r-l),bh=Math.max(1,b-t);
-      items.forEach(m=>{m.x0=m.n.x;m.y0=m.n.y;m.w0=m.el.offsetWidth;m.h0=m.el.offsetHeight;});
-      const mv=e=>{const fx=Math.max(.3,(bw+(e.clientX-sx)/view.scale)/bw),fy=Math.max(.3,(bh+(e.clientY-sy)/view.scale)/bh);
-        items.forEach(m=>{m.n.x=l+(m.x0-l)*fx;m.n.y=t+(m.y0-t)*fy;m.n.w=Math.max(40,m.w0*fx);m.el.style.left=m.n.x+'px';m.el.style.top=m.n.y+'px';m.el.style.width=m.n.w+'px';
-          if(m.n.type!=='image'){m.n.h=Math.max(30,m.h0*fy);m.el.style.height=m.n.h+'px';}});
-        redrawGroups();updateSelBar();};
+
+  // ===== 8-direction resize handles =====
+  el.querySelectorAll('.rh').forEach(handle=>{
+    const dir=handle.dataset.dir;
+    handle.addEventListener('pointerdown',ev=>{ev.stopPropagation();ev.preventDefault();
+      handle.setPointerCapture(ev.pointerId);const sx=ev.clientX,sy=ev.clientY;
+      if(!selSet.has(n.id)) setSel(withGroup(n.id));
+      // Multi-select scales the whole selection proportionally (corner handles only)
+      if(selSet.size>1 && (dir==='se'||dir==='ne'||dir==='nw'||dir==='sw')){
+        const items=[...selSet].map(id=>({n:getNode(id),el:els.get(id)})).filter(m=>m.n&&m.el&&m.n.type!=='connector');
+        let l=1e9,t=1e9,r=-1e9,b=-1e9;
+        items.forEach(m=>{l=Math.min(l,m.n.x);t=Math.min(t,m.n.y);r=Math.max(r,m.n.x+m.el.offsetWidth);b=Math.max(b,m.n.y+m.el.offsetHeight);});
+        const bw=Math.max(1,r-l),bh=Math.max(1,b-t);
+        items.forEach(m=>{m.x0=m.n.x;m.y0=m.n.y;m.w0=m.el.offsetWidth;m.h0=m.el.offsetHeight;});
+        const sX=(dir==='ne'||dir==='se')?1:-1, sY=(dir==='sw'||dir==='se')?1:-1;
+        const mv=e=>{const fx=Math.max(.3,(bw+sX*(e.clientX-sx)/view.scale)/bw),fy=Math.max(.3,(bh+sY*(e.clientY-sy)/view.scale)/bh);
+          items.forEach(m=>{m.n.x=l+(m.x0-l)*fx;m.n.y=t+(m.y0-t)*fy;m.n.w=Math.max(40,m.w0*fx);m.el.style.left=m.n.x+'px';m.el.style.top=m.n.y+'px';m.el.style.width=m.n.w+'px';
+            if(m.n.type!=='image'){m.n.h=Math.max(30,m.h0*fy);m.el.style.height=m.n.h+'px';}
+            updateConnectorsForNode(m.n.id);});
+          redrawGroups();updateSelBar();};
+        const up=()=>{handle.releasePointerCapture(ev.pointerId);handle.removeEventListener('pointermove',mv);handle.removeEventListener('pointerup',up);save();};
+        handle.addEventListener('pointermove',mv);handle.addEventListener('pointerup',up);return;
+      }
+      // Single-box directional resize
+      const x0=n.x,y0=n.y,w0=el.offsetWidth,h0=el.offsetHeight;
+      const sizesX=dir.includes('e')||dir.includes('w');
+      const sizesY=dir.includes('n')||dir.includes('s');
+      const movesX=dir.includes('w');
+      const movesY=dir.includes('n');
+      const mv=e=>{
+        const dx=(e.clientX-sx)/view.scale, dy=(e.clientY-sy)/view.scale;
+        if(sizesX){
+          const sign=movesX?-1:1; const w=Math.max(40,w0+dx*sign); n.w=w; el.style.width=w+'px';
+          if(movesX){const x=x0+(w0-w); n.x=x; el.style.left=x+'px';}
+        }
+        if(sizesY && n.type!=='image'){
+          const sign=movesY?-1:1; const h=Math.max(30,h0+dy*sign); n.h=h; el.style.height=h+'px';
+          if(movesY){const y=y0+(h0-h); n.y=y; el.style.top=y+'px';}
+        }
+        updateConnectorsForNode(n.id);
+        redrawGroups();updateSelBar();
+      };
       const up=()=>{handle.releasePointerCapture(ev.pointerId);handle.removeEventListener('pointermove',mv);handle.removeEventListener('pointerup',up);save();};
-      handle.addEventListener('pointermove',mv);handle.addEventListener('pointerup',up);return;
-    }
-    const sw=el.offsetWidth,sh=el.offsetHeight;
-    const mv=e=>{const w=Math.max(70,sw+(e.clientX-sx)/view.scale);n.w=w;el.style.width=w+'px';
-      if(n.type!=='image'){const h=Math.max(40,sh+(e.clientY-sy)/view.scale);n.h=h;el.style.height=h+'px';}redrawGroups();updateSelBar();};
-    const up=()=>{handle.releasePointerCapture(ev.pointerId);handle.removeEventListener('pointermove',mv);handle.removeEventListener('pointerup',up);save();};
-    handle.addEventListener('pointermove',mv);handle.addEventListener('pointerup',up);});
+      handle.addEventListener('pointermove',mv);handle.addEventListener('pointerup',up);
+    });
+  });
+
+  // ===== 4-side connection anchors (drag to create connector) =====
+  el.querySelectorAll('.anc').forEach(anc=>{
+    const side=anc.dataset.side;
+    anc.addEventListener('pointerdown',ev=>{
+      ev.stopPropagation();ev.preventDefault();
+      startConnectorDrag(n,side,ev);
+    });
+  });
   // edit text (note + content box + shape)
   if(n.type==='note'||n.type==='box'||n.type==='shape'){
     el.addEventListener('dblclick',ev=>{ev.stopPropagation();
@@ -958,7 +1191,7 @@ function wireNode(el,n){
     const sx=ev.clientX,sy=ev.clientY;let moved=false;
     el.setPointerCapture(ev.pointerId);
     const mv=e=>{const dx=(e.clientX-sx)/view.scale,dy=(e.clientY-sy)/view.scale;if(Math.abs(dx)>2||Math.abs(dy)>2)moved=true;
-      movers.forEach(m=>{m.n.x=m.x0+dx;m.n.y=m.y0+dy;m.el.style.left=m.n.x+'px';m.el.style.top=m.n.y+'px';});redrawGroups();updateSelBar();};
+      movers.forEach(m=>{m.n.x=m.x0+dx;m.n.y=m.y0+dy;m.el.style.left=m.n.x+'px';m.el.style.top=m.n.y+'px';updateConnectorsForNode(m.n.id);});redrawGroups();updateSelBar();};
     const up=()=>{el.releasePointerCapture(ev.pointerId);movers.forEach(m=>m.el.classList.remove('dragging'));el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);
       if(!moved && !ev.shiftKey && selSet.size>1) setSel(withGroup(n.id));
       if(moved){ if(!isFrameDrag) movers.forEach(m=>{if(m.n.type!=='frame')reframe(m.n);}); save(); }};
@@ -1063,7 +1296,7 @@ function goTo(i,animate){
 }
 
 /* ===== pen ===== */
-let penColor=ORANGE,penWidth=3,drawing=null;
+let penColor='#1A1A16',penWidth=3,drawing=null;
 function strokeD(pts){if(pts.length<2)return pts.length?`M${pts[0][0]} ${pts[0][1]} l0.1 0.1`:'';let d=`M${pts[0][0]} ${pts[0][1]}`;
   for(let i=1;i<pts.length-1;i++){const mx=(pts[i][0]+pts[i+1][0])/2,my=(pts[i][1]+pts[i+1][1])/2;d+=` Q${pts[i][0]} ${pts[i][1]} ${mx} ${my}`;}
   const l=pts[pts.length-1];d+=` L${l[0]} ${l[1]}`;return d;}
@@ -1220,7 +1453,7 @@ document.getElementById('fmtColor').addEventListener('input',e=>{
   document.getElementById('fmtColorWrap').style.color=e.target.value;
 });
 
-const palette=[ORANGE,GREEN,'#1A1A16','#C8102E','#2A5BBF','#E0A100'];
+const palette=['#1A1A16','#C8102E','#2A5BBF',GREEN,ORANGE,'#E0A100'];
 document.getElementById('swatches').innerHTML=palette.map(c=>`<div class="sw" data-c="${c}" style="background:${c}"></div>`).join('');
 document.querySelectorAll('.sw').forEach(s=>s.addEventListener('click',()=>{penColor=s.dataset.c;document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===s));}));
 document.querySelector('.sw').classList.add('on');penColor=palette[0];
@@ -1626,7 +1859,48 @@ document.getElementById('openLink').addEventListener('click',()=>document.getEle
 document.getElementById('openFile').addEventListener('change',e=>{const f=e.target.files[0];if(f)openBackup(f);e.target.value='';});
 
 ['dragover','drop'].forEach(t=>stage.addEventListener(t,e=>e.preventDefault()));
-stage.addEventListener('drop',e=>{const p=screenToWorld(e.clientX,e.clientY);[...e.dataTransfer.files].forEach((f,i)=>fileToImage(f,p.x+i*16,p.y+i*16));});
+stage.addEventListener('drop',async e=>{
+  const p=screenToWorld(e.clientX,e.clientY);
+  const files=[...(e.dataTransfer?.files||[])];
+  // Images: existing fast path
+  const imgs=files.filter(f=>f.type.startsWith('image/'));
+  imgs.forEach((f,i)=>fileToImage(f,p.x+i*16,p.y+i*16));
+  // Text-ish: AI-format and drop sections directly onto the board
+  const TEXT_RE=/^(text\/|application\/(json|xml))/;
+  const textish=files.filter(f=>TEXT_RE.test(f.type)||/\.(txt|md|markdown)$/i.test(f.name));
+  if(textish.length){
+    setHint('Reading dropped file…');
+    for(const f of textish){
+      try{
+        const text=await f.text();
+        if(!text.trim())continue;
+        setHint('Formatting with AI…');
+        const sections=await WB_CLOUD.aiFormat(text);
+        if(!Array.isArray(sections)||!sections.length){toast('AI returned no sections from '+f.name);continue;}
+        // Use the existing import-build path so the dropped file flows through
+        // the same section-building code as the modal.
+        if(typeof buildSections==='function'){buildSections(sections,false);}
+        else{preview=sections;openReview();}
+        setHint('Built '+sections.length+' section'+(sections.length===1?'':'s')+' from '+f.name);
+      }catch(err){
+        toast('Could not import '+f.name+': '+(err&&err.message?err.message:'unknown'));
+      }
+    }
+  }
+  // Plain text payload (paste/drag from another tab): same treatment
+  const txt=e.dataTransfer?.getData?.('text/plain');
+  if(!files.length && txt && txt.length>30){
+    try{
+      setHint('Formatting with AI…');
+      const sections=await WB_CLOUD.aiFormat(txt);
+      if(Array.isArray(sections)&&sections.length){
+        if(typeof buildSections==='function')buildSections(sections,false);
+        else{preview=sections;openReview();}
+        setHint('Built '+sections.length+' section'+(sections.length===1?'':'s')+' from clipboard text');
+      }
+    }catch(err){toast('AI format failed: '+(err&&err.message?err.message:'unknown'));}
+  }
+});
 window.addEventListener('paste',e=>{const items=e.clipboardData&&e.clipboardData.items;if(!items)return;for(const it of items)if(it.type.startsWith('image/'))fileToImage(it.getAsFile());});
 
 window.addEventListener('keydown',e=>{
@@ -1654,6 +1928,10 @@ window.addEventListener('keydown',e=>{
     if(e.key==='p'||e.key==='P')setMode('draw');
     if(e.key==='e'||e.key==='E')setMode('erase');
     if(e.key==='n'||e.key==='N'){setMode('select');addNote();}
+    if(e.key==='t'||e.key==='T'){setMode('select');addNote();}
+    if(e.key==='s'||e.key==='S'){setMode('select');toggleShapeFlyout();}
+    if(e.key==='r'||e.key==='R'){setMode('select');addShape('rect');}
+    if(e.key==='o'||e.key==='O'){setMode('select');addShape('circle');}
   }
   if((e.key==='Delete'||e.key==='Backspace')&&selSet.size){e.preventDefault();deleteSel();}});
 window.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;stage.classList.remove('spacing','panning');}});
@@ -1808,7 +2086,7 @@ async function loadCurrentBoard(){
   if(saved&&Array.isArray(saved.nodes)&&saved.nodes.length){
     framesLayer.innerHTML='';nodesLayer.innerHTML='';groupsLayer.innerHTML='';els.clear();zc=20;selSet=new Set();
     state={nodes:saved.nodes,strokes:saved.strokes||[],nextId:saved.nextId||0,view:saved.view||null};
-    state.nodes.forEach(makeNode);redrawGroups();redrawStrokes();migrateFrames();renumber();
+    connectorsLayer.innerHTML='';state.nodes.forEach(makeNode);redrawGroups();redrawStrokes();migrateFrames();renumber();updateAllConnectors();
     if(state.view){view=state.view;applyView();syncPresLabel();}else goTo(0,false);
     syncPresLabel();
   } else if(saved&&Array.isArray(saved.nodes)){
