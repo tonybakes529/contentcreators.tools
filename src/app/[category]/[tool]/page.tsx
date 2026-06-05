@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CATEGORIES, getTool } from "@/lib/catalog";
 import { getToolRow } from "@/lib/tools-db";
+import { renderCustomTool } from "@/lib/custom-tools";
 import ToolRunner from "@/components/tool-runner";
 import { Icons } from "@/components/icons";
 
@@ -56,6 +57,21 @@ export default async function ToolPage({
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
     url: `https://contentcreators.tools/${category.slug}/${tool.slug}`,
   };
+
+  if (tool.custom) {
+    const customNode = await renderCustomTool(tool.slug);
+    if (customNode) {
+      return (
+        <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+          {customNode}
+        </>
+      );
+    }
+  }
 
   const toolRow = await getToolRow(tool.slug);
   if (toolRow) {
