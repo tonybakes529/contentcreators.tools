@@ -10,8 +10,10 @@ export type Tool = {
   icon: string;
   status: ToolStatus;
   desc: string;
-  /** Live tool URL (loaded in iframe). Required when status === "live". */
+  /** Live tool URL (loaded in iframe). Required when status === "live" and custom is false. */
   url?: string;
+  /** Bespoke React component for this tool (not the shared ToolRunner). */
+  custom?: boolean;
   /** Optional longer SEO copy shown on the tool page */
   seo?: string;
 };
@@ -42,17 +44,18 @@ export const CATEGORIES: Category[] = [
   {
     slug: "youtube",
     name: "YouTube",
-    badge: "YouTube growth tools · free · no signup to try",
-    h1: "Grow your <em>YouTube</em> channel.",
-    sub: "Free tools to write better scripts, audit your CTAs, decode your comments, and make thumbnails that earn the click. Built for creators who treat YouTube like a business.",
-    primaryToolSlug: "script-analyzer",
-    primaryLabel: "Try Script Analyzer",
+    badge: "YouTube research + production · free",
+    h1: "Plan your next <em>YouTube</em> video.",
+    sub: "Pre-production tools for creators who treat YouTube like a business. Build outlines, analyze scripts, audit thumbnails, decode comments — everything you do before you hit record.",
+    primaryToolSlug: "talking-points",
+    primaryLabel: "Open Talking Points",
     tools: [
+      { slug: "talking-points", name: "Talking Points", sub: "Outline → ready to film", icon: "TP", status: "live", custom: true, desc: "Build a video outline as sections of bullets, drop in reference photos for your editor, add per-section notes, then copy or download the sheet." },
+      { slug: "whiteboard", name: "Whiteboard", sub: "Brain dump → board", icon: "WB", status: "live", url: "/tools/whiteboard.html", desc: "A free AI-powered Miro-style board. Paste any doc and it splits into sections of editable, draggable, resizable boxes — with drawing, sticky notes, image uploads, and multi-board saves." },
       { slug: "script-analyzer", name: "Script Analyzer", sub: "Script → feedback", icon: "SA", status: "soon", desc: "Paste a video script. Get section-by-section notes on pacing, retention risks, and clarity." },
       { slug: "thumbnail-to-intro-analyzer", name: "Thumbnail to Intro Analyzer", sub: "Promise → delivery", icon: "TI", status: "soon", desc: "Compare your thumbnail/title promise against your first 30s and flag any mismatch." },
-      { slug: "cta-flow-check", name: "CTA Flow Check", sub: "Script → CTA audit", icon: "CF", status: "soon", desc: "Find every CTA in your script, score placement, and suggest cleaner sequencing." },
       { slug: "comment-analyzer", name: "Comment Analyzer", sub: "Comments → themes", icon: "CA", status: "soon", desc: "Drop a comment dump. Get themes, sentiment, and the next 5 video ideas your audience is asking for." },
-      { slug: "thumbnail-preview", name: "Thumbnail Preview Tool", sub: "Image → feed mock", icon: "TP", status: "soon", desc: "See your thumbnail mocked in the YouTube grid, sidebar, and mobile at real sizes." },
+      { slug: "thumbnail-preview", name: "Thumbnail Preview Tool", sub: "Image → feed mock", icon: "TM", status: "soon", desc: "See your thumbnail mocked in the YouTube grid, sidebar, and mobile at real sizes." },
     ],
   },
   {
