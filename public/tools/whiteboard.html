@@ -27,7 +27,7 @@
   #world.anim{transition:transform .62s cubic-bezier(.6,.05,.2,1)}
   #frames,#nodes{position:absolute; inset:0}
   #draw{position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:visible}
-  #pen{position:fixed; inset:0; display:none; z-index:30}
+  #pen{position:fixed; inset:0; display:none; z-index:10000}
   #stage.mode-draw #pen,#stage.mode-erase #pen{display:block}
   #stage.spacing #pen{display:none !important}
 
@@ -148,6 +148,11 @@
     box-shadow:0 2px 4px rgba(26,26,22,.06),0 10px 26px rgba(120,100,20,.18); transform:rotate(-1.2deg); min-width:140px}
   .node.note .kick{font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#9a861f; margin-bottom:4px}
   .node.note .ttl{font-weight:500; font-size:15px; line-height:1.4; min-height:20px; outline:none}
+  /* Plain text node — no sticky background, just text */
+  .node.text{padding:8px 10px; min-width:60px; min-height:28px; border-radius:6px; background:transparent; border:1px dashed transparent; transition:border-color .12s}
+  .node.text:hover,.node.text.sel{border-color:rgba(0,0,0,.12)}
+  .node.text .ttl{font-family:'DM Sans',sans-serif; font-weight:500; font-size:16px; line-height:1.35; color:var(--ink); outline:none; min-width:60px; min-height:18px; white-space:pre-wrap; word-break:break-word}
+  .node.text .ttl:empty::before{content:'Type…'; color:var(--faint); pointer-events:none}
   .node.image{padding:6px; background:var(--paper); border:1px solid var(--line); border-radius:11px; box-shadow:0 2px 6px rgba(26,26,22,.08),0 14px 34px rgba(26,26,22,.12)}
   .node.image img{display:block; width:100%; height:auto; border-radius:6px; pointer-events:none}
   [contenteditable="true"]{cursor:text; background:rgba(28,107,74,.07); border-radius:4px; outline:none}
@@ -548,6 +553,7 @@
   <button class="tbtn" data-tool="draw" title="Pen (P)"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 10-10-3-3L5 16l-1 4z"/><path d="M14 6l3 3"/></svg><span class="lab">Pen</span></button>
   <button class="tbtn" data-tool="erase" title="Eraser (E)"><svg viewBox="0 0 24 24"><path d="M4 15l7-7 6 6-4 4H8l-4-3z"/><path d="M9 20h11"/></svg><span class="lab">Erase</span></button>
   <div class="tsep"></div>
+  <button class="tbtn" data-act="text" title="Add text (T)"><svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13M9 19h6"/></svg><span class="lab">Text</span></button>
   <button class="tbtn" data-act="note" title="Add sticky note (N)"><svg viewBox="0 0 24 24"><path d="M5 4h14v10l-5 5H5z"/><path d="M19 14h-5v5"/></svg><span class="lab">Note</span></button>
   <button class="tbtn" data-act="image" title="Add image (I)"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M5 17l4-4 3 3 3-4 4 5"/></svg><span class="lab">Image</span></button>
   <button class="tbtn" id="shapeBtn" title="Add shape (S)"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="4"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg><span class="lab">Shape</span></button>
@@ -894,7 +900,15 @@ function makeNode(n){
     const lab=document.createElement('div');lab.className='shape-label';lab.textContent=n.ttl||'';
     el.appendChild(lab);
   }
-  else{el.className='node note';const k=document.createElement('div');k.className='kick';k.textContent='Note';el.appendChild(k);const t=document.createElement('div');t.className='ttl';t.textContent=n.ttl||'';el.appendChild(t);}
+  else if(n.type==='text'){
+    el.className='node text';
+    const t=document.createElement('div');t.className='ttl';
+    if(n.html) t.innerHTML=n.html; else t.textContent=n.ttl||'';
+    el.appendChild(t);
+  }
+  else{el.className='node note';const k=document.createElement('div');k.className='kick';k.textContent='Note';el.appendChild(k);const t=document.createElement('div');t.className='ttl';
+    if(n.html) t.innerHTML=n.html; else t.textContent=n.ttl||'';
+    el.appendChild(t);}
   // 8-direction resize handles
   ['nw','n','ne','e','se','s','sw','w'].forEach(dir=>{
     const h=document.createElement('div');h.className='rh h-'+dir;h.dataset.dir=dir;el.appendChild(h);
@@ -911,6 +925,7 @@ function makeNode(n){
   els.set(n.id,el);
   el.style.zIndex = n.type==='frame' ? 1 : ++zc;
   wireNode(el,n);
+  if(n.textStyle && typeof applyTextStyle==='function') applyTextStyle(n);
   return el;
 }
 
@@ -1157,17 +1172,18 @@ function wireNode(el,n){
       startConnectorDrag(n,side,ev);
     });
   });
-  // edit text (note + content box + shape)
-  if(n.type==='note'||n.type==='box'||n.type==='shape'){
+  // edit text (note + content box + shape + plain text)
+  if(n.type==='note'||n.type==='box'||n.type==='shape'||n.type==='text'){
     el.addEventListener('dblclick',ev=>{ev.stopPropagation();
       let tgt;
-      if(n.type==='note') tgt = el.querySelector('.ttl');
+      if(n.type==='note'||n.type==='text') tgt = el.querySelector('.ttl');
       else if(n.type==='shape') tgt = el.querySelector('.shape-label');
       else tgt = el.firstElementChild;
       if(!tgt)return; tgt.setAttribute('contenteditable','true'); tgt.focus();
       const r=document.createRange();r.selectNodeContents(tgt);const s=getSelection();s.removeAllRanges();s.addRange(r);
       const done=()=>{tgt.removeAttribute('contenteditable');
-        if(n.type==='note'||n.type==='shape') n.ttl=tgt.textContent;
+        if(n.type==='shape') n.ttl=tgt.textContent;
+        else if(n.type==='note'||n.type==='text'){n.html=tgt.innerHTML; n.ttl=tgt.textContent;}
         else n.html=tgt.outerHTML;
         tgt.removeEventListener('blur',done); save();};
       tgt.addEventListener('blur',done);
@@ -1205,6 +1221,13 @@ function addNote(x,y){const p=(x==null)?centerWorld():{x,y};
   setTimeout(()=>{const t=el.querySelector('.ttl');t.setAttribute('contenteditable','true');t.focus();
     const r=document.createRange();r.selectNodeContents(t);const s=getSelection();s.removeAllRanges();s.addRange(r);
     t.addEventListener('blur',()=>{t.removeAttribute('contenteditable');n.ttl=t.textContent;save();},{once:true});},30);}
+function addText(x,y){
+  const p=(x==null)?centerWorld():{x,y};
+  const n={id:'n'+(++state.nextId),type:'text',ttl:'',x:p.x-90,y:p.y-16,w:200};
+  state.nodes.push(n);const el=makeNode(n);reframe(n);setSel([n.id]);
+  setTimeout(()=>{const t=el.querySelector('.ttl');t.setAttribute('contenteditable','true');t.focus();
+    t.addEventListener('blur',()=>{t.removeAttribute('contenteditable');n.html=t.innerHTML;n.ttl=t.textContent;save();},{once:true});},30);
+}
 
 function shapeSVG(kind){
   switch(kind){
@@ -1347,6 +1370,7 @@ function setMode(m){mode=m;stage.className='mode-'+m;
   else setHint('Drag empty space to select an area · drag a box to move · grab a corner to resize · double-click to edit');}
 document.querySelectorAll('.tbtn[data-tool]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.tool)));
 document.querySelector('.tbtn[data-act="note"]').addEventListener('click',()=>{setMode('select');addNote();});
+document.querySelector('.tbtn[data-act="text"]').addEventListener('click',()=>{setMode('select');addText();});
 const fileInput=document.getElementById('fileInput');
 document.querySelector('.tbtn[data-act="image"]').addEventListener('click',()=>fileInput.click());
 document.getElementById('addImgBtn').addEventListener('click',()=>fileInput.click());
@@ -1380,77 +1404,125 @@ document.addEventListener('pointerdown',e=>{
  * blurs so persistence stays in sync.
  */
 const fmtBar=document.getElementById('fmtBar');
-let fmtTarget=null;          // current editable element being formatted
-let fmtBarHideT=null;
+let fmtNode=null;            // the current node whose text we're formatting
+let fmtEl=null;              // the contenteditable container inside that node
+
+/* Which DOM element inside a node holds the text? */
+function textContainerForNode(n){
+  const el=els.get(n.id);if(!el||el.tagName==='path')return null;
+  if(n.type==='shape') return el.querySelector('.shape-label');
+  if(n.type==='note'||n.type==='text') return el.querySelector('.ttl');
+  if(n.type==='box') return el; // box wraps html directly
+  return null;
+}
+function nodeHasText(n){return !!textContainerForNode(n);}
+
+/* Apply persisted textStyle to a node's text container via inline CSS.
+ * Called from makeNode on render and after every format change so the
+ * styles round-trip through save/load cleanly. */
+function applyTextStyle(n,el){
+  el=el||textContainerForNode(n);if(!el)return;
+  const s=n.textStyle||{};
+  el.style.fontWeight     = s.bold       ? '700' : '';
+  el.style.fontStyle      = s.italic     ? 'italic' : '';
+  el.style.textDecoration = s.underline  ? 'underline' : '';
+  el.style.fontFamily     = s.fontFamily || '';
+  el.style.fontSize       = s.fontSize   ? s.fontSize+'px' : '';
+  el.style.color          = s.color      || '';
+  el.style.textAlign      = s.align      || '';
+}
+
+function showFmtBarForNode(node){
+  if(!node||!nodeHasText(node)){hideFmtBar();return;}
+  fmtNode=node;
+  fmtEl=textContainerForNode(node);
+  fmtBar.classList.add('show');
+  positionFmtBar();
+  syncFmtBarFromStyle();
+}
+function hideFmtBar(){fmtBar.classList.remove('show');fmtNode=null;fmtEl=null;}
 function positionFmtBar(){
-  if(!fmtTarget)return;
-  const r=fmtTarget.getBoundingClientRect();
+  if(!fmtEl)return;
+  const r=fmtEl.getBoundingClientRect();
   if(!r.width&&!r.height){fmtBar.classList.remove('show');return;}
   fmtBar.style.left=(r.left+r.width/2)+'px';
   fmtBar.style.top=r.top+'px';
 }
-function showFmtBar(target){
-  clearTimeout(fmtBarHideT);
-  fmtTarget=target;fmtBar.classList.add('show');positionFmtBar();syncFmtBarState();
+function syncFmtBarFromStyle(){
+  if(!fmtNode)return;
+  const s=fmtNode.textStyle||{};
+  fmtBar.querySelector('[data-fcmd="bold"]').classList.toggle('is-on',!!s.bold);
+  fmtBar.querySelector('[data-fcmd="italic"]').classList.toggle('is-on',!!s.italic);
+  fmtBar.querySelector('[data-fcmd="underline"]').classList.toggle('is-on',!!s.underline);
+  if(s.fontFamily){const sel=document.getElementById('fmtFont');if([...sel.options].some(o=>o.value===s.fontFamily))sel.value=s.fontFamily;}
+  if(s.fontSize){const sel=document.getElementById('fmtSize');sel.value=String(s.fontSize);}
+  const wrap=document.getElementById('fmtColorWrap');
+  if(s.color){wrap.style.color=s.color;document.getElementById('fmtColor').value=s.color;}
+  else wrap.style.color='#1A1A16';
 }
-function hideFmtBar(){
-  // Defer so clicking a button doesn't close the bar before its handler runs
-  fmtBarHideT=setTimeout(()=>{
-    if(fmtBar.matches(':hover'))return;
-    fmtBar.classList.remove('show');fmtTarget=null;
-  },120);
+
+function mutateStyle(patch){
+  if(!fmtNode)return;
+  fmtNode.textStyle = Object.assign({}, fmtNode.textStyle||{}, patch);
+  applyTextStyle(fmtNode);
+  syncFmtBarFromStyle();
+  save();
 }
-function syncFmtBarState(){
-  try{
-    fmtBar.querySelectorAll('.fmt-btn[data-fcmd]').forEach(b=>{
-      const cmd=b.dataset.fcmd;
-      if(cmd==='bold'||cmd==='italic'||cmd==='underline'){
-        b.classList.toggle('is-on',document.queryCommandState(cmd));
-      }
-    });
-  }catch(e){}
-}
-// Listen at the document level so we catch any contenteditable element
-document.addEventListener('focusin',e=>{
-  const t=e.target;if(!t||!(t.getAttribute&&t.getAttribute('contenteditable')==='true'))return;
-  if(!t.matches('.ttl, .shape-label, [data-fmt]'))return;
-  showFmtBar(t);
-});
-document.addEventListener('focusout',e=>{
-  if(!fmtTarget||e.target!==fmtTarget)return;hideFmtBar();
-});
-document.addEventListener('selectionchange',()=>{if(fmtTarget)syncFmtBarState();});
+
+/* The bar should be visible whenever a single text-bearing node is selected
+ * OR when a contenteditable element has focus. Hook into markSel so
+ * selection changes update the bar in real time. */
+const _markSelOrig=markSel;
+markSel=function(){
+  _markSelOrig();
+  if(selSet.size===1){
+    const n=getNode([...selSet][0]);
+    if(n&&nodeHasText(n)){showFmtBarForNode(n);return;}
+  }
+  // Keep bar when typing into something even if selSet is empty
+  if(document.activeElement && document.activeElement.getAttribute && document.activeElement.getAttribute('contenteditable')==='true')return;
+  hideFmtBar();
+};
+
 window.addEventListener('scroll',positionFmtBar,true);
 window.addEventListener('resize',positionFmtBar);
+// Reposition the bar while the user drags / resizes the node
+const _rafPos=()=>{if(fmtNode)positionFmtBar();requestAnimationFrame(_rafPos);};requestAnimationFrame(_rafPos);
 
+// Don't let the bar steal focus on click
 fmtBar.addEventListener('mousedown',e=>{
-  // Prevent stealing focus from the editor before our command runs
-  if(e.target.closest('select')||e.target.tagName==='OPTION')return;
+  if(e.target.tagName==='SELECT'||e.target.tagName==='OPTION'||e.target.tagName==='INPUT')return;
   e.preventDefault();
 });
+
 fmtBar.addEventListener('click',e=>{
-  if(!fmtTarget)return;fmtTarget.focus();
+  if(!fmtNode)return;
   const cmdBtn=e.target.closest('[data-fcmd]');
-  if(cmdBtn){document.execCommand(cmdBtn.dataset.fcmd);syncFmtBarState();return;}
+  if(cmdBtn){
+    const cmd=cmdBtn.dataset.fcmd;
+    if(cmd==='bold'||cmd==='italic'||cmd==='underline'){
+      mutateStyle({[cmd]: !(fmtNode.textStyle&&fmtNode.textStyle[cmd])});
+    } else if(cmd==='removeFormat'){
+      fmtNode.textStyle={}; applyTextStyle(fmtNode); syncFmtBarFromStyle(); save();
+    }
+    return;
+  }
   const alignBtn=e.target.closest('[data-falign]');
-  if(alignBtn){const a=alignBtn.dataset.falign;document.execCommand('justify'+a[0].toUpperCase()+a.slice(1));return;}
+  if(alignBtn){mutateStyle({align:alignBtn.dataset.falign});}
 });
-document.getElementById('fmtFont').addEventListener('change',e=>{
-  if(!fmtTarget)return;fmtTarget.focus();document.execCommand('fontName',false,e.target.value);
-});
-document.getElementById('fmtSize').addEventListener('change',e=>{
-  if(!fmtTarget)return;fmtTarget.focus();
-  // execCommand('fontSize') only takes 1-7; emulate with inline span
-  const px=e.target.value+'px';
-  document.execCommand('fontSize',false,'7');
-  fmtTarget.querySelectorAll('font[size="7"]').forEach(f=>{
-    const s=document.createElement('span');s.style.fontSize=px;s.innerHTML=f.innerHTML;f.replaceWith(s);
-  });
-});
-document.getElementById('fmtColor').addEventListener('input',e=>{
-  if(!fmtTarget)return;fmtTarget.focus();
-  document.execCommand('foreColor',false,e.target.value);
-  document.getElementById('fmtColorWrap').style.color=e.target.value;
+document.getElementById('fmtFont').addEventListener('change',e=>{mutateStyle({fontFamily:e.target.value});});
+document.getElementById('fmtSize').addEventListener('change',e=>{mutateStyle({fontSize:parseInt(e.target.value,10)});});
+document.getElementById('fmtColor').addEventListener('input',e=>{mutateStyle({color:e.target.value});});
+
+/* Right-click any text-bearing node → pops up the format bar there */
+document.addEventListener('contextmenu',e=>{
+  const nodeEl=e.target.closest&&e.target.closest('.node');
+  if(!nodeEl)return;
+  const n=getNode(nodeEl.dataset.id);
+  if(!n||!nodeHasText(n))return;
+  e.preventDefault();
+  setSel([n.id]);
+  showFmtBarForNode(n);
 });
 
 const palette=['#1A1A16','#C8102E','#2A5BBF',GREEN,ORANGE,'#E0A100'];
@@ -1928,7 +2000,7 @@ window.addEventListener('keydown',e=>{
     if(e.key==='p'||e.key==='P')setMode('draw');
     if(e.key==='e'||e.key==='E')setMode('erase');
     if(e.key==='n'||e.key==='N'){setMode('select');addNote();}
-    if(e.key==='t'||e.key==='T'){setMode('select');addNote();}
+    if(e.key==='t'||e.key==='T'){setMode('select');addText();}
     if(e.key==='s'||e.key==='S'){setMode('select');toggleShapeFlyout();}
     if(e.key==='r'||e.key==='R'){setMode('select');addShape('rect');}
     if(e.key==='o'||e.key==='O'){setMode('select');addShape('circle');}
