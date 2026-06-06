@@ -284,6 +284,40 @@
   .shape-flyout .sf-btn svg{width:28px; height:28px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round}
   .shape-flyout .sf-btn.is-soon{opacity:.45; cursor:not-allowed}
   .shape-flyout .sf-tip{font-size:10px; color:var(--muted); padding:2px 2px; line-height:1.45; letter-spacing:.02em; text-transform:none}
+  /* template grid + per-template tiles */
+  .shape-flyout{width:260px}
+  .shape-flyout .sf-grid-tpl{grid-template-columns:1fr 1fr; gap:8px}
+  .shape-flyout .sf-tpl{width:auto; height:auto; padding:8px 8px 6px; flex-direction:column; gap:4px}
+  .shape-flyout .sf-tpl .sf-prev{display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+    width:100%; height:50px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--paper); overflow:hidden}
+  .shape-flyout .sf-tpl .sf-prev b{font-family:'Space Mono',monospace; font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink)}
+  .shape-flyout .sf-tpl .sf-prev > span:not(.sf-line){font-size:10px; color:var(--ink-dim,var(--muted)); margin-top:1px}
+  .shape-flyout .sf-tpl.sf-prev-banner{}
+  .shape-flyout .sf-tpl .sf-prev-banner{background:#fff}
+  /* tone backgrounds for banner previews */
+  .shape-flyout .sf-tone-green{background:var(--green-tint) !important; border-color:transparent !important}
+  .shape-flyout .sf-tone-green b{color:var(--green) !important}
+  .shape-flyout .sf-tone-orange{background:var(--orange-tint) !important; border-color:transparent !important}
+  .shape-flyout .sf-tone-orange b{color:var(--orange) !important}
+  /* text preview */
+  .shape-flyout .sf-prev-text{justify-content:center; gap:4px}
+  .shape-flyout .sf-line{display:block; width:100%; height:5px; border-radius:3px; background:var(--cream)}
+  .shape-flyout .sf-line-2{width:62%}
+  /* bullets preview */
+  .shape-flyout .sf-prev-bullets{gap:3px; font-size:10px; color:var(--ink)}
+  .shape-flyout .sf-prev-bullets b{font-family:inherit !important; font-size:10px !important; letter-spacing:0 !important; text-transform:none !important; color:var(--ink-dim,var(--muted)) !important; margin-right:4px}
+  /* stat preview */
+  .shape-flyout .sf-prev-stat{align-items:flex-start}
+  .shape-flyout .sf-prev-stat b{font-family:'Anton',sans-serif !important; font-size:18px !important; letter-spacing:0 !important; line-height:1; color:var(--ink) !important; text-transform:none !important}
+  /* card preview */
+  .shape-flyout .sf-prev-card{justify-content:flex-start; padding-top:4px}
+  .shape-flyout .sf-prev-card b{font-family:'Anton',sans-serif !important; font-size:11px !important; letter-spacing:0 !important; text-transform:none !important; color:var(--ink) !important; line-height:1.1}
+  .shape-flyout .sf-tpl .sf-name{font-size:9px; color:var(--ink-dim,var(--muted)); font-family:'Space Mono',monospace; letter-spacing:.08em; text-transform:uppercase}
+  /* hover ring */
+  .shape-flyout .sf-tpl:hover{background:#fff}
+  .shape-flyout .sf-tpl:hover .sf-prev{border-color:var(--green-strong,var(--green))}
+  /* flyout title when invoked from a frame */
+  .shape-flyout .sf-h.into-frame::before{content:'+ '; color:var(--green)}
 
   /* shape nodes */
   .node.shape{display:flex; align-items:center; justify-content:center}
@@ -556,21 +590,42 @@
   <button class="tbtn" data-act="text" title="Add text (T)"><svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13M9 19h6"/></svg><span class="lab">Text</span></button>
   <button class="tbtn" data-act="note" title="Add sticky note (N)"><svg viewBox="0 0 24 24"><path d="M5 4h14v10l-5 5H5z"/><path d="M19 14h-5v5"/></svg><span class="lab">Note</span></button>
   <button class="tbtn" data-act="image" title="Add image (I)"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M5 17l4-4 3 3 3-4 4 5"/></svg><span class="lab">Image</span></button>
-  <button class="tbtn" id="shapeBtn" title="Add shape (S)"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="4"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg><span class="lab">Shape</span></button>
+  <button class="tbtn" id="shapeBtn" title="Add element (S)"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1.4"/><rect x="3" y="13" width="11" height="6" rx="1.4"/></svg><span class="lab">Elements</span></button>
 </div>
 
 <div class="shape-flyout" id="shapeFlyout">
-  <div class="sf-h">Shape</div>
-  <div class="sf-grid">
-    <button class="sf-btn" data-shape="rect" title="Rectangle"><svg viewBox="0 0 32 32"><rect x="4" y="7" width="24" height="18" rx="2"/></svg></button>
-    <button class="sf-btn" data-shape="circle" title="Circle"><svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11"/></svg></button>
-    <button class="sf-btn" data-shape="ellipse" title="Ellipse"><svg viewBox="0 0 32 32"><ellipse cx="16" cy="16" rx="13" ry="8"/></svg></button>
-    <button class="sf-btn" data-shape="triangle" title="Triangle"><svg viewBox="0 0 32 32"><path d="M16 4 L29 27 L3 27 Z"/></svg></button>
-    <button class="sf-btn" data-shape="diamond" title="Diamond"><svg viewBox="0 0 32 32"><path d="M16 3 L29 16 L16 29 L3 16 Z"/></svg></button>
-    <button class="sf-btn" data-shape="pill" title="Pill"><svg viewBox="0 0 32 32"><rect x="3" y="10" width="26" height="12" rx="6"/></svg></button>
+  <div class="sf-h">Add an element</div>
+  <div class="sf-grid sf-grid-tpl">
+    <button class="sf-btn sf-tpl" data-tpl="header-green" title="Section header (green)">
+      <span class="sf-prev sf-prev-banner sf-tone-green"><b>HEADER</b><span>Title</span></span>
+      <span class="sf-name">Header · green</span>
+    </button>
+    <button class="sf-btn sf-tpl" data-tpl="header-orange" title="Section header (orange)">
+      <span class="sf-prev sf-prev-banner sf-tone-orange"><b>HEADER</b><span>Title</span></span>
+      <span class="sf-name">Header · orange</span>
+    </button>
+    <button class="sf-btn sf-tpl" data-tpl="text" title="Plain text block">
+      <span class="sf-prev sf-prev-text"><span class="sf-line"></span><span class="sf-line sf-line-2"></span></span>
+      <span class="sf-name">Text</span>
+    </button>
+    <button class="sf-btn sf-tpl" data-tpl="bullets" title="Bullet list">
+      <span class="sf-prev sf-prev-bullets">
+        <span><b>·</b> Point one</span>
+        <span><b>·</b> Point two</span>
+      </span>
+      <span class="sf-name">Bullets</span>
+    </button>
+    <button class="sf-btn sf-tpl" data-tpl="stat" title="Big number + label">
+      <span class="sf-prev sf-prev-stat"><b>90%</b><span>label</span></span>
+      <span class="sf-name">Stat</span>
+    </button>
+    <button class="sf-btn sf-tpl" data-tpl="card" title="Structured card">
+      <span class="sf-prev sf-prev-card"><b>Card title</b><span>Supporting copy in the body.</span></span>
+      <span class="sf-name">Card</span>
+    </button>
   </div>
   <div class="sf-h sf-h-small">Connector</div>
-  <div class="sf-tip mono">Hover any shape and drag from one of the 4 side dots → drop on another shape.</div>
+  <div class="sf-tip mono">Hover any element and drag from one of the 4 side dots → drop on another.</div>
 </div>
 
 <div class="pen-opts" id="penOpts">
@@ -1116,7 +1171,7 @@ function wireNode(el,n){
     if(n.type==='frame'){membersOf(n).forEach(m=>removeNodeRaw(m.id));removeNodeRaw(n.id);redrawGroups();markSel();save();}
     else removeNode(n.id);});
   const fadd=el.querySelector('.fadd');
-  if(fadd){fadd.addEventListener('pointerdown',e=>e.stopPropagation());fadd.addEventListener('click',e=>{e.stopPropagation();addBoxToFrame(n);});}
+  if(fadd){fadd.addEventListener('pointerdown',e=>e.stopPropagation());fadd.addEventListener('click',e=>{e.stopPropagation();openElementsForFrame(n);});}
 
   // ===== 8-direction resize handles =====
   el.querySelectorAll('.rh').forEach(handle=>{
@@ -1384,11 +1439,38 @@ function toggleShapeFlyout(force){
   document.body.classList.toggle('shape-open',on);
   shapeBtn.classList.toggle('on',on);
 }
-shapeBtn.addEventListener('click',e=>{e.stopPropagation();toggleShapeFlyout();});
-shapeFlyout.addEventListener('click',e=>{
-  const b=e.target.closest('.sf-btn[data-shape]');if(!b||b.disabled)return;
-  setMode('select');addShape(b.dataset.shape);toggleShapeFlyout(false);
+shapeBtn.addEventListener('click',e=>{
+  e.stopPropagation();
+  boxTargetFrame=null; // sidebar button = canvas drop
+  setFlyoutMode(null);
+  toggleShapeFlyout();
 });
+shapeFlyout.addEventListener('click',e=>{
+  const b=e.target.closest('.sf-btn[data-tpl]');if(!b||b.disabled)return;
+  setMode('select');
+  addBoxFromTemplate(b.dataset.tpl);
+  // The picked target was consumed — reset for next time
+  boxTargetFrame=null;
+  setFlyoutMode(null);
+  toggleShapeFlyout(false);
+});
+/* Visual hint on the flyout header for "add to section" vs "add to canvas" */
+function setFlyoutMode(frameNode){
+  const h=shapeFlyout.querySelector('.sf-h');if(!h)return;
+  if(frameNode){
+    h.textContent='Add to section "'+(frameNode.name||'')+'"';
+    h.classList.add('into-frame');
+  } else {
+    h.textContent='Add an element';
+    h.classList.remove('into-frame');
+  }
+}
+/* Per-section "+ Add box" button now opens the same templates picker */
+function openElementsForFrame(frameNode){
+  boxTargetFrame=frameNode;
+  setFlyoutMode(frameNode);
+  toggleShapeFlyout(true);
+}
 // Close flyout when clicking elsewhere
 document.addEventListener('pointerdown',e=>{
   if(!document.body.classList.contains('shape-open'))return;
@@ -1558,8 +1640,64 @@ function reframe(box){const old=box.frameId||null;const f=frameContaining(box);b
   else if(!old&&box.frameId)setHint('Box dropped into a section — it moves with that section now.');}
 function migrateFrames(){state.nodes.forEach(n=>{if(n.type==='frame')return;if(n.frameId===undefined){const f=frameContaining(n);n.frameId=f?f.id:null;}});}
 function sectionBottom(f){let b=f.y+74;membersOf(f).forEach(m=>{const el=els.get(m.id);if(el)b=Math.max(b,m.y+el.offsetHeight);});return b;}
-function addBoxToFrame(f){const PAD=34,x=f.x+PAD,w=f.w-PAD*2,y=sectionBottom(f)+15;
-  const n={id:'b'+(++state.nextId),type:'box',kind:'text',html:'<p class="lead">New text — double-click to edit</p>',accent:f.accent,tone:f.tone,frameId:f.id,x,y,w};
+/* ===== Box templates (the Elements menu) =====
+ * Every template produces a `type:'box'` node with a `kind` and starter HTML.
+ * The same templates are used by:
+ *   - the left-rail Elements button (drops at canvas center)
+ *   - the per-section "+ Add box" button (drops into that section's frame)
+ *
+ * Tone (green / orange) is inherited from the target frame for headers;
+ * for canvas-dropped headers it's hard-coded by the template id.
+ */
+const BOX_TEMPLATES={
+  'header-green': {kind:'banner', tone:'green', accent:GREEN, w:620,
+    html: function(){return '<div class="banner green"><div class="bicon">📌</div><div class="btext"><div class="bkick">HEADER</div><div class="btitle">Section title</div></div></div>';}},
+  'header-orange': {kind:'banner', tone:'orange', accent:ORANGE, w:620,
+    html: function(){return '<div class="banner orange"><div class="bicon">📌</div><div class="btext"><div class="bkick">HEADER</div><div class="btitle">Section title</div></div></div>';}},
+  'text': {kind:'text', w:480,
+    html: function(){return '<p class="lead">New text — double-click to edit.</p>';}},
+  'bullets': {kind:'text', w:480,
+    html: function(){return '<ul class="tp"><li><strong>First</strong> point</li><li>Second point</li><li>Third point</li></ul>';}},
+  'stat': {kind:'stat', w:220,
+    html: function(){return '<div class="stat"><div class="v">90%</div><div class="l">label</div></div>';}},
+  'card': {kind:'card', w:300,
+    html: function(){return '<div class="card"><div class="clabel">LABEL</div><div class="ctitle">Card title</div><ul class="cul"><li>Supporting point one</li><li>Supporting point two</li></ul></div>';}},
+};
+
+/* Where should the next pick land? null = canvas center; otherwise a frame node. */
+let boxTargetFrame=null;
+
+function addBoxFromTemplate(tplId,opts){
+  opts=opts||{};
+  const tpl=BOX_TEMPLATES[tplId];
+  if(!tpl){setHint('Unknown template: '+tplId);return null;}
+  const target=opts.frame||boxTargetFrame;
+  if(target) return addBoxToFrame(target,tplId);
+  // Canvas drop: center on the current viewport
+  const p=centerWorld();
+  const w=tpl.w||320;
+  const tone=tpl.tone||null;
+  const accent=tpl.accent||null;
+  const n={id:'b'+(++state.nextId),type:'box',kind:tpl.kind,html:tpl.html(),x:p.x-w/2,y:p.y-30,w};
+  if(tone){n.tone=tone;n.accent=accent;}
+  state.nodes.push(n);const el=makeNode(n);reframe(n);setSel([n.id]);save();
+  setHint('Added · double-click to edit · grab a corner to resize · drag a side dot to connect.');
+  // Auto-enter edit mode on the inner text so the user can rename immediately
+  setTimeout(()=>{const inner=el.firstElementChild;if(!inner)return;
+    inner.setAttribute('contenteditable','true');inner.focus();
+    const r=document.createRange();r.selectNodeContents(inner);const s=getSelection();s.removeAllRanges();s.addRange(r);
+    inner.addEventListener('blur',()=>{inner.removeAttribute('contenteditable');n.html=inner.outerHTML;save();},{once:true});
+  },30);
+  return n;
+}
+
+function addBoxToFrame(f,tplId){
+  const PAD=34,x=f.x+PAD,w=f.w-PAD*2,y=sectionBottom(f)+15;
+  const tpl=(tplId&&BOX_TEMPLATES[tplId])||BOX_TEMPLATES['text'];
+  // For headers, override the tone with the template's chosen tone; for everything else inherit the frame's tone.
+  const useTone=tpl.tone||f.tone;
+  const useAccent=tpl.accent||f.accent;
+  const n={id:'b'+(++state.nextId),type:'box',kind:tpl.kind,html:tpl.html(),accent:useAccent,tone:useTone,frameId:f.id,x,y,w};
   state.nodes.push(n);const el=makeNode(n);
   const fh=f.h||frameRect(f).h; const need=(y+el.offsetHeight+PAD)-(f.y+fh);
   if(need>0){f.h=fh+need;const fe=els.get(f.id);if(fe)fe.style.height=f.h+'px';}
@@ -1567,7 +1705,9 @@ function addBoxToFrame(f){const PAD=34,x=f.x+PAD,w=f.w-PAD*2,y=sectionBottom(f)+
   setTimeout(()=>{const tgt=el.firstElementChild;if(!tgt)return;tgt.setAttribute('contenteditable','true');tgt.focus();
     const r=document.createRange();r.selectNodeContents(tgt);const s=getSelection();s.removeAllRanges();s.addRange(r);
     tgt.addEventListener('blur',()=>{tgt.removeAttribute('contenteditable');n.html=tgt.outerHTML;save();},{once:true});},30);
-  setHint('Box added to this section — type your text, then click away.');}
+  setHint('Element added to this section — type your text, then click away.');
+  return n;
+}
 function renumber(){orderedFrames().forEach((f,i)=>{f.n=String(i+1).padStart(2,'0');const el=els.get(f.id);if(el){const lab=el.querySelector('.flabel');if(lab)lab.innerHTML=`<span class="fn">${f.n}</span> ${f.name}`;}});}
 function getOrder(){return orderedFrames().map(f=>f.id);}
 function applyOrder(ids){const GAPF=150;const memMap={};orderedFrames().forEach(f=>memMap[f.id]=membersOf(f).map(m=>m.id));
@@ -2001,9 +2141,7 @@ window.addEventListener('keydown',e=>{
     if(e.key==='e'||e.key==='E')setMode('erase');
     if(e.key==='n'||e.key==='N'){setMode('select');addNote();}
     if(e.key==='t'||e.key==='T'){setMode('select');addText();}
-    if(e.key==='s'||e.key==='S'){setMode('select');toggleShapeFlyout();}
-    if(e.key==='r'||e.key==='R'){setMode('select');addShape('rect');}
-    if(e.key==='o'||e.key==='O'){setMode('select');addShape('circle');}
+    if(e.key==='s'||e.key==='S'){setMode('select');boxTargetFrame=null;setFlyoutMode(null);toggleShapeFlyout();}
   }
   if((e.key==='Delete'||e.key==='Backspace')&&selSet.size){e.preventDefault();deleteSel();}});
 window.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;stage.classList.remove('spacing','panning');}});
