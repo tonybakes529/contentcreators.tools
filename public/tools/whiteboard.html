@@ -27,7 +27,10 @@
   #world.anim{transition:transform .62s cubic-bezier(.6,.05,.2,1)}
   #frames,#nodes{position:absolute; inset:0}
   #draw{position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:visible}
-  #pen{position:fixed; inset:0; display:none; z-index:10000}
+  /* #pen is an <svg> — replaced element, so `inset:0` alone won't size it.
+   * Explicit width/height + zero default size are required to make the
+   * pointer-event overlay cover the whole iframe viewport.            */
+  #pen{position:fixed; inset:0; width:100%; height:100%; display:none; z-index:10000; touch-action:none}
   #stage.mode-draw #pen,#stage.mode-erase #pen{display:block}
   #stage.spacing #pen{display:none !important}
 
@@ -1380,14 +1383,41 @@ function strokeD(pts){if(pts.length<2)return pts.length?`M${pts[0][0]} ${pts[0][
   const l=pts[pts.length-1];d+=` L${l[0]} ${l[1]}`;return d;}
 function redrawStrokes(){drawSvg.innerHTML=state.strokes.map(s=>`<path d="${strokeD(s.pts)}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-linecap="round" stroke-linejoin="round"></path>`).join('');}
 function penPoint(ev){const w=screenToWorld(ev.clientX,ev.clientY);return [Math.round(w.x*10)/10,Math.round(w.y*10)/10];}
-pen.addEventListener('pointerdown',ev=>{ev.preventDefault();pen.setPointerCapture(ev.pointerId);
-  if(mode==='erase'){eraseAt(penPoint(ev));return;}drawing={id:'s'+(++state.nextId),color:penColor,width:penWidth,pts:[penPoint(ev)]};});
-pen.addEventListener('pointermove',ev=>{if(mode==='erase'){if(ev.buttons)eraseAt(penPoint(ev));return;}
-  if(!drawing)return;drawing.pts.push(penPoint(ev));
-  let p=drawSvg.querySelector('#live');if(!p){p=document.createElementNS('http://www.w3.org/2000/svg','path');p.id='live';drawSvg.appendChild(p);}
-  p.setAttribute('d',strokeD(drawing.pts));p.setAttribute('fill','none');p.setAttribute('stroke',drawing.color);p.setAttribute('stroke-width',drawing.width);p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round');});
-pen.addEventListener('pointerup',ev=>{pen.releasePointerCapture(ev.pointerId);if(mode==='erase'){save();return;}
-  if(drawing){const live=drawSvg.querySelector('#live');if(live)live.remove();if(drawing.pts.length)state.strokes.push(drawing);redrawStrokes();drawing=null;save();}});
+pen.addEventListener('pointerdown',ev=>{
+  ev.preventDefault();
+  // setPointerCapture can throw on synthetic events / weird pointer devices.
+  // We don't actually need capture — pointermove on `pen` works without it
+  // because the overlay fills the viewport. Capture is just nice-to-have.
+  try{pen.setPointerCapture(ev.pointerId);}catch(e){}
+  if(mode==='erase'){eraseAt(penPoint(ev));return;}
+  drawing={id:'s'+(++state.nextId),color:penColor,width:penWidth,pts:[penPoint(ev)]};
+});
+pen.addEventListener('pointermove',ev=>{
+  if(mode==='erase'){if(ev.buttons)eraseAt(penPoint(ev));return;}
+  if(!drawing)return;
+  drawing.pts.push(penPoint(ev));
+  let p=drawSvg.querySelector('#live');
+  if(!p){p=document.createElementNS('http://www.w3.org/2000/svg','path');p.id='live';drawSvg.appendChild(p);}
+  p.setAttribute('d',strokeD(drawing.pts));p.setAttribute('fill','none');p.setAttribute('stroke',drawing.color);p.setAttribute('stroke-width',drawing.width);p.setAttribute('stroke-linecap','round');p.setAttribute('stroke-linejoin','round');
+});
+pen.addEventListener('pointerup',ev=>{
+  // releasePointerCapture throws if the pointer was never captured — wrap
+  // it so a failed capture doesn't kill the rest of the handler and lose
+  // the stroke.
+  try{pen.releasePointerCapture(ev.pointerId);}catch(e){}
+  if(mode==='erase'){save();return;}
+  if(drawing){
+    const live=drawSvg.querySelector('#live');if(live)live.remove();
+    if(drawing.pts.length)state.strokes.push(drawing);
+    redrawStrokes();drawing=null;save();
+  }
+});
+// Cover cases where the pointer leaves the overlay or is cancelled by the
+// system mid-stroke — commit what we have rather than losing it.
+pen.addEventListener('pointercancel',ev=>{try{pen.releasePointerCapture(ev.pointerId);}catch(e){}
+  if(drawing){const live=drawSvg.querySelector('#live');if(live)live.remove();
+    if(drawing.pts.length>1)state.strokes.push(drawing);redrawStrokes();drawing=null;save();}
+});
 function eraseAt(pt){const thr=14/view.scale;for(let i=state.strokes.length-1;i>=0;i--){const s=state.strokes[i];for(const p of s.pts){if(Math.hypot(p[0]-pt[0],p[1]-pt[1])<thr+s.width/2){state.strokes.splice(i,1);redrawStrokes();return;}}}}
 
 /* ===== stage pan/zoom ===== */
