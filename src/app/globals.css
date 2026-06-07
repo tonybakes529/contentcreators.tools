@@ -90,6 +90,9 @@ button { font-family: inherit; cursor: pointer; }
 .signin-form input { background: var(--bg); border: 1px solid var(--rule); color: var(--ink); padding: 12px 14px; font-size: 15px; border-radius: 8px; outline: 0; transition: border-color .15s; }
 .signin-form input:focus { border-color: var(--accent); }
 .signin-form .btn-primary { align-self: flex-start; margin-top: 4px; }
+.signin-toggle { margin-top: 18px; font-size: 13px; color: var(--ink-dim); }
+.signin-toggle button { background: transparent; border: 0; padding: 0; color: var(--accent); font-weight: 600; cursor: pointer; font-size: 13px; font-family: inherit; }
+.signin-toggle button:hover { text-decoration: underline; }
 .signin-error { color: #ff6b5a; font-size: 13px; padding: 8px 12px; background: rgba(255,107,90,0.06); border-radius: 6px; border: 1px solid rgba(255,107,90,0.3); }
 .signin-success { padding: 20px; border: 1px solid var(--accent-strong); background: var(--accent-soft); border-radius: 10px; }
 .signin-success strong { display: block; font-family: var(--font-display), sans-serif; font-size: 18px; color: var(--ink); margin-bottom: 8px; }
